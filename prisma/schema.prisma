@@ -10,30 +10,209 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Devs {
-  id String @id @default(cuid())
-  firstName String
-  lastName String
-  email String @unique
-  password String
-}
+// essa linha só funciona em produção com postgress
+// enum MovementsType{
+//   In
+//   OUT
+// } */
 
 model Users {
   id String @id @default(cuid())
-  firstName String
-  lastName String
+  firstname String
+  lastname String
   email String @unique
-  born  String
-  cpf String @unique
-  cellphone String @unique 
-} 
+  password String
+  cellphone String @unique
+  role String
+  fixedPayment Float?
+  commissionProduct Float?
+  commissionProcedure Float?
+  firstLogin Boolean @default(true)
+  adminId String?
+  barbershopId String?
+  admin Users? @relation("UserAdmin", fields: [adminId], references: [id])
+  barbershop Barbershops? @relation(fields: [barbershopId], references: [id])
+  members Users[] @relation("UserAdmin")
+  services Services[]
+  serviceCommissions ServiceCommissions[]
 
-model Product{
+  @@map("users")
+}
+
+model Barbershops {
   id String @id @default(cuid())
-  nameProduct String
-  weight Float
+  name String
+  addressId String
+  address Addresses @relation(fields: [addressId], references: [id])
+  cashRegister CashRegisters?
+  fixedExpenses FixedExpenses[]
+  monthlyBalance MonthlyBalance[]
+  procedures Procedures[]
+  products Products[]
+  users Users[]
+  services Services[]
+
+  @@map("barbershops")
+}
+
+model Addresses{
+  id String @id @default(cuid())
+  cep String
+  address String
+  barbershops Barbershops[]
+
+ @@map("addresses")
+}
+
+model Categories {
+  id String @id @default(cuid())
+  name String
+  products Products[]
+  procedures Procedures[]
+
+  @@map("categories")
+}
+
+model Products{
+  id String @id @default(cuid())
+  userId String
+  name String
+  weight String
   nameWeight String
-  amount Int
-  buyPrice Float
-  seelPrice Float
+  cost Float
+  price Float
+  describe String?
+  workTop Boolean
+  stock Int
+  barbershopId String
+  categoryId String
+  barbershop Barbershops @relation(fields: [barbershopId], references: [id])
+  category Categories @relation(fields: [categoryId], references: [id]) 
+  services ProductsToServices[]
+  stockMovements StockMovements[]
+
+  @@map("products")
+}
+
+model StockMovements{
+  id String @id @default(cuid())
+  movementType String
+  quantity Int
+  date DateTime @default(now())
+  description String? 
+  productId String
+  product Products @relation(fields: [productId], references: [id])
+
+  @@map("stockMovements")
+}
+
+model Procedures{
+  id String @id @default(cuid())
+  name String
+  cost Float
+  price Float
+  barberShopId String
+  categoryId String
+  barbershop Barbershops @relation(fields: [barberShopId], references: [id])
+  category Categories @relation(fields: [categoryId], references: [id])
+  services ProceduresToServices[]
+ 
+
+  @@map("procedures")
+}
+
+model CashRegisters {
+  id String @id @default(cuid())
+  cash Float 
+  barbershopId String @unique  
+  barbershop Barbershops @relation(fields: [barbershopId],references: [id])
+  cashMovements CashMovements[]
+
+  @@map("cashRegisters")
+}
+
+model CashMovements{
+  id String @id @default(cuid())
+  type String
+  amount Float
+  description String?
+  date DateTime @default(now())
+  cashRegisterId String
+  cashRegister CashRegisters @relation(fields: [cashRegisterId], references: [id])
+
+  @@map("cashMovements")
+}
+
+model FixedExpenses{
+  id String @id @default(cuid())
+  name String
+  date DateTime @default(now())
+  price Float
+  barbershopId String
+  barbershop Barbershops @relation(fields: [barbershopId], references: [id])
+
+  @@map("fixedExpenses")
+}
+
+model MonthlyBalance{
+  id String @id @default(cuid())
+  month Int
+  year Int
+  totalRevenue Float
+  fixedCost Float
+  variableCost Float
+  totalProfit Float
+  barbershopId String
+  barbershop Barbershops @relation(fields: [barbershopId], references: [id])
+
+  @@map("monthlyBalance")
+}
+
+model ProceduresToServices {
+  id String @id @default(cuid())
+  procedureId String
+  serviceId String
+  procedure Procedures @relation(fields: [procedureId], references: [id])
+  service Services @relation(fields: [serviceId], references: [id])
+
+  @@map("proceduresToServices")
+}
+
+model ProductsToServices {
+  id String @id @default(cuid())
+  productId String
+  serviceId String
+  product Products @relation(fields: [productId], references: [id])
+  service Services @relation(fields: [serviceId], references: [id])
+
+  @@map("productsToServices")
+}
+
+model Services {
+  id String @id @default(cuid())
+  price Float // Valor total do serviço
+  date DateTime @default(now())
+  userId String
+  barbershopId String
+  procedures ProceduresToServices[]
+  products ProductsToServices[]
+  user Users @relation(fields: [userId], references: [id])
+  barbershop Barbershops @relation(fields: [barbershopId], references: [id])
+  serviceCommissions ServiceCommissions[]
+
+  @@map("services")
+}
+
+model ServiceCommissions {
+  id String @id @default(cuid())
+  serviceId String
+  userId String
+  productCommission Float 
+  procedureCommission Float 
+  totalCommission Float 
+  date DateTime @default(now())
+  service Services @relation(fields: [serviceId], references: [id])
+  user Users @relation(fields: [userId], references: [id])
+
+  @@map("serviceCommissions")
 }
